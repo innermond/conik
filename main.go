@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"math"
 )
 
 var (
 	t, b, h, w float64
-	p, l, a, g float64
+	p, l, a    float64
 	k, c, d    bool
 )
 
@@ -17,7 +18,6 @@ func param() {
 	flag.Float64Var(&b, "B", 0, "Bottom diameter of the cone")
 	flag.Float64Var(&h, "H", 0, "Height of the label")
 	flag.Float64Var(&w, "W", 0, "Width of the straightened label")
-	flag.Float64Var(&g, "G", 0, "Gap between ends, expressed as length")
 	flag.BoolVar(&k, "K", false, "Draw entire unfolded cone")
 	flag.BoolVar(&c, "C", false, "Print only numbers")
 	flag.BoolVar(&d, "D", false, "Print straighten unfolded cone")
@@ -46,13 +46,28 @@ func main() {
 	q := p + h
 	// radians angle of cone top point
 	a = l / p
-	// take gap into acount
-	g = math.Atan(g / q)
-	a = a + g
-	// degrees
-	//a = a * 180 / math.Pi
+	if a >= 3 || (b-t)*0.5 >= h {
+		log.Fatalf("imposible label having height %.2f for cone with diameters %.2f %.2f/n", h, b, t)
+	}
 	// half a
 	a2 := a / 2
+
+	if w > 0.0 {
+		asin := 0.5 * w / q
+		a2 = math.Asin(asin)
+		a = 2 * a2
+	}
+
+	// small half chord for inner arch of cone
+	chord1 := p * math.Sin(a2)
+	// height of encompassing rect for curved label
+	hx := q - chord1/math.Tan(a2)
+	// lenght of straightened curve; half of chord for outer arch of cone
+	chord2 := q * math.Sin(a2)
+
+	if w > 0.0 && w > 2*chord2 {
+		log.Fatalf("width specified %.2f wraps cone more than once\n")
+	}
 
 	// end point
 	px := 0.0
@@ -74,14 +89,6 @@ func main() {
 	q2x := math.Sin(a) * q
 	q2y := math.Cos(a) * q
 
-	degrees := a2 * 180 / math.Pi
-
-	// small half chord for inner arch of cone
-	chord1 := p * math.Sin(a2)
-	// height of encompassing rect for curved label
-	hx := q - chord1/math.Tan(a2)
-	// lenght of straightened curve; half of chord for outer arch of cone
-	chord2 := q * math.Sin(a2)
 	transform := "translate(%f,%f) "
 	transform = fmt.Sprintf(transform, chord2, -1.0*q+hx)
 	if flip {
@@ -89,6 +96,7 @@ func main() {
 		transform = fmt.Sprintf(transform, q2x, q)
 	}
 	transform += "rotate(%f)"
+	degrees := a2 * 180 / math.Pi
 	transform = fmt.Sprintf(transform, degrees)
 	curve := `
 <path
@@ -142,6 +150,6 @@ func main() {
 	if !c {
 		fmt.Println(svg)
 	} else {
-		fmt.Printf("t:%f b:%f h:%f p:%f p1x:%f p1y:%f a:%f g:%f q:%f q1x:%f q1y:%f q2x:%f q2y:%f o1x:%f o1y:%f\n", t, b, h, p, p1x, p1y, a*180/math.Pi, g, q, q1x, q1y, q2x, q2y, o1x, o1y)
+		fmt.Printf("t:%f b:%f h:%f p:%f p1x:%f p1y:%f a:%f q:%f q1x:%f q1y:%f q2x:%f q2y:%f o1x:%f o1y:%f\n", t, b, h, p, p1x, p1y, a*180/math.Pi, q, q1x, q1y, q2x, q2y, o1x, o1y)
 	}
 }
