@@ -7,15 +7,15 @@ import (
 )
 
 var (
-	t, b, h, w    float64
-	r, p, l, a, g float64
-	k, c, d       bool
+	t, b, h, w float64
+	p, l, a, g float64
+	k, c, d    bool
 )
 
-func init() {
+func param() {
 	flag.Float64Var(&t, "T", 0, "Top diameter of the cone")
 	flag.Float64Var(&b, "B", 0, "Bottom diameter of the cone")
-	flag.Float64Var(&h, "H", 0, "Height of the straightened label")
+	flag.Float64Var(&h, "H", 0, "Height of the label")
 	flag.Float64Var(&w, "W", 0, "Width of the straightened label")
 	flag.Float64Var(&g, "G", 0, "Gap between ends, expressed as length")
 	flag.BoolVar(&k, "K", false, "Draw entire unfolded cone")
@@ -25,6 +25,8 @@ func init() {
 }
 
 func main() {
+	param()
+
 	//hack
 	if t == b {
 		t = b * 0.000001
@@ -35,11 +37,14 @@ func main() {
 		t, b = b, t
 	}
 
-	r = math.Sqrt(math.Pow((b-t)/2, 2) + math.Pow(h, 2))
+	// top circle unwrapped
 	l = math.Pi * t
-	p = (t * r) / (b - t)
-	q := p + r
-	// radians
+	// (p+b)/(b/2) = p/(t/2)
+	// segment on top of top-circle to complete the entire cone
+	p = (t * h) / (b - t)
+	// entire cone radius
+	q := p + h
+	// radians angle of cone top point
 	a = l / p
 	// take gap into acount
 	g = math.Atan(g / q)
@@ -71,35 +76,59 @@ func main() {
 
 	degrees := a2 * 180 / math.Pi
 
-	transform := ""
+	// small half chord for inner arch of cone
+	chord1 := p * math.Sin(a2)
+	// height of encompassing rect for curved label
+	hx := q - chord1/math.Tan(a2)
+	// lenght of straightened curve; half of chord for outer arch of cone
+	chord2 := q * math.Sin(a2)
+	transform := "translate(%f,%f) "
+	transform = fmt.Sprintf(transform, chord2, -1.0*q+hx)
 	if flip {
-		transform += "translate(%f,%f) scale(1,-1) "
-		transform = fmt.Sprintf(transform, q1x, q)
+		transform = "translate(%f,%f) scale(1,-1) "
+		transform = fmt.Sprintf(transform, q2x, q)
 	}
 	transform += "rotate(%f)"
 	transform = fmt.Sprintf(transform, degrees)
-
-	curve := `<path d="M%f %f Q%f %f %f %f L%f %f Q%f %f %f %f Z" transform="%s" fill="none" stroke="black" stroke-width="0.1" />`
+	curve := `
+<path
+	d="M%f %f Q%f %f %f %f L%f %f Q%f %f %f %f Z"
+	transform="%s"
+	fill="none" stroke="black" stroke-width="0.1"
+/>`
 	curve = fmt.Sprintf(curve, p2x, p2y, p1x, p1y, px, py, qx, qy, q1x, q1y, q2x, q2y, transform)
 
-	svg := `<svg
-width="%f%s" height="%f%s"
-viewBox="%f %f %f %f"
-version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	svg := `
+<svg
+	width="%f%s" height="%f%s"
+	viewBox="%f %f %f %f"
+	version="1.1"
+	xmlns="http://www.w3.org/2000/svg"
+	xmlns:xlink="http://www.w3.org/1999/xlink">
 	%s%s%s
-	</svg>`
+</svg>`
 	ox, oy := 0.0, 0.0
 	o1x, o1y := math.Tan(a)*q, q
 	unit := "mm"
 	kon := ""
 	if k {
-		kon = `<path d="M%f %f V%f H%f Z" transform="rotate(%f)" fill="none" stroke="black" stroke-width="0.1" />`
+		kon = `
+<path
+	d="M%f %f V%f H%f Z"
+	transform="rotate(%f)"
+	fill="none" stroke="black" stroke-width="0.1"
+/>`
 		kon = fmt.Sprintf(kon, ox, oy, o1y, o1x, degrees)
 	}
 	rect := ""
 	if d {
-		rect = `<rect x="%f" y="%f" width="%f" height="%f" fill="none" stroke="black" stroke-width="0.1" />`
-		rect = fmt.Sprintf(rect, 0.0, 0.0, math.Pi*b, r)
+		rect = `
+<rect
+	x="%f" y="%f"
+	width="%f" height="%f"
+	fill="none" stroke="black" stroke-width="0.1"
+/>`
+		rect = fmt.Sprintf(rect, 0.0, 0.0, 2*chord2, h)
 	}
 	svg = fmt.Sprintf(
 		svg,
@@ -113,6 +142,6 @@ version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/
 	if !c {
 		fmt.Println(svg)
 	} else {
-		fmt.Printf("t:%f b:%f h:%f r:%f p:%f p1x:%f p1y:%f a:%f g:%f q:%f q1x:%f q1y:%f q2x:%f q2y:%f o1x:%f o1y:%f\n", t, b, h, r, p, p1x, p1y, a*180/math.Pi, g, q, q1x, q1y, q2x, q2y, o1x, o1y)
+		fmt.Printf("t:%f b:%f h:%f p:%f p1x:%f p1y:%f a:%f g:%f q:%f q1x:%f q1y:%f q2x:%f q2y:%f o1x:%f o1y:%f\n", t, b, h, p, p1x, p1y, a*180/math.Pi, g, q, q1x, q1y, q2x, q2y, o1x, o1y)
 	}
 }
