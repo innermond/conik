@@ -9,8 +9,8 @@ import (
 
 var (
 	t, b, h, w float64
-	p, l, a    float64
-	k, c, d    bool
+	p, l, a, g float64
+	c, d       bool
 )
 
 func param() {
@@ -18,7 +18,7 @@ func param() {
 	flag.Float64Var(&b, "B", 0, "Bottom diameter of the cone")
 	flag.Float64Var(&h, "H", 0, "Height of the label")
 	flag.Float64Var(&w, "W", 0, "Width of the straightened label")
-	flag.BoolVar(&k, "K", false, "Draw entire unfolded cone")
+	flag.Float64Var(&g, "G", 0, "Gap between ends of label")
 	flag.BoolVar(&c, "C", false, "Print only numbers")
 	flag.BoolVar(&d, "D", false, "Print straighten unfolded cone")
 	flag.Parse()
@@ -27,47 +27,42 @@ func param() {
 func main() {
 	param()
 
-	//hack
 	if t == b {
-		t = b * 0.000001
+		log.Fatal("not a con, a cilinder")
 	}
+
 	flip := false
 	if t > b {
 		flip = true
 		t, b = b, t
 	}
 
-	// top circle unwrapped
-	l = math.Pi * t
-	// (p+b)/(b/2) = p/(t/2)
-	// segment on top of top-circle to complete the entire cone
-	p = (t * h) / (b - t)
-	// entire cone radius
-	q := p + h
-	// radians angle of cone top point
-	a = l / p
+	a2 := math.Asin(0.5 * (b - t) / h)
+	a = 2 * a2
 	if a >= 3 || (b-t)*0.5 >= h {
 		log.Fatalf("imposible label having height %.2f for cone with diameters %.2f %.2f/n", h, b, t)
 	}
-	// half a
-	a2 := a / 2
+	// top circle unwrapped
+	l = math.Pi * t
+	// (p+h2)/(b/2) = p/(t/2)
+	// segment on top of top-circle to complete the entire cone
+	p := 0.5 * t / math.Sin(a2)
+	// entire cone radius
+	q := p + h
 
 	if w > 0.0 {
-		asin := 0.5 * w / q
-		a2 = math.Asin(asin)
-		a = 2 * a2
+		a = w / q
+		a2 = 0.5 * a
 	}
 
-	// small half chord for inner arch of cone
-	chord1 := p * math.Sin(a2)
+	if g > 0.0 {
+		ag := g / q
+		a -= ag
+		a2 = 0.5 * a
+	}
+
 	// height of encompassing rect for curved label
-	hx := q - chord1/math.Tan(a2)
-	// lenght of straightened curve; half of chord for outer arch of cone
-	chord2 := q * math.Sin(a2)
-
-	if w > 0.0 && w > 2*chord2 {
-		log.Fatalf("width specified %.2f wraps cone more than once\n")
-	}
+	hx := q - math.Cos(a2)*p
 
 	// end point
 	px := 0.0
@@ -90,7 +85,8 @@ func main() {
 	q2y := math.Cos(a) * q
 
 	transform := "translate(%f,%f) "
-	transform = fmt.Sprintf(transform, chord2, -1.0*q+hx)
+	rectw := q * a
+	transform = fmt.Sprintf(transform, 0.5*rectw, -1.0*q+hx)
 	if flip {
 		transform = "translate(%f,%f) scale(1,-1) "
 		transform = fmt.Sprintf(transform, q2x, q)
@@ -113,21 +109,11 @@ func main() {
 	version="1.1"
 	xmlns="http://www.w3.org/2000/svg"
 	xmlns:xlink="http://www.w3.org/1999/xlink">
-	%s%s%s
+	%s%s
 </svg>`
 	ox, oy := 0.0, 0.0
-	o1x, o1y := math.Tan(a)*q, q
+	o1x, o1y := rectw, hx
 	unit := "mm"
-	kon := ""
-	if k {
-		kon = `
-<path
-	d="M%f %f V%f H%f Z"
-	transform="rotate(%f)"
-	fill="none" stroke="black" stroke-width="0.1"
-/>`
-		kon = fmt.Sprintf(kon, ox, oy, o1y, o1x, degrees)
-	}
 	rect := ""
 	if d {
 		rect = `
@@ -136,15 +122,14 @@ func main() {
 	width="%f" height="%f"
 	fill="none" stroke="black" stroke-width="0.1"
 />`
-		rect = fmt.Sprintf(rect, 0.0, 0.0, 2*chord2, h)
+		rect = fmt.Sprintf(rect, 0.0, 0.0, rectw, h)
 	}
 	svg = fmt.Sprintf(
 		svg,
 		o1x, unit,
-		q, unit,
+		hx, unit,
 		ox, oy, o1x, o1y,
 		curve,
-		kon,
 		rect,
 	)
 	if !c {
