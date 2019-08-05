@@ -18,7 +18,7 @@ func param() {
 	flag.Float64Var(&b, "B", 0.0, "Bottom diameter of the cone")
 	flag.Float64Var(&h, "H", 0.0, "Height of the label")
 	flag.Float64Var(&w, "W", 0.0, "Width of the straightened label")
-	flag.Float64Var(&g, "G", 0.0, "Gap between ends of label")
+	flag.Float64Var(&g, "G", 0.0, "Overlap between ends of label")
 	flag.BoolVar(&c, "C", false, "Print only numbers")
 	flag.BoolVar(&d, "D", false, "Print straighten unfolded cone")
 	flag.Parse()
@@ -53,7 +53,7 @@ func main() {
 	// adjust angle to take in account a gap betweem ends
 	if g != 0.0 {
 		ag := g / q
-		a -= ag
+		a += ag
 		a2 = 0.5 * a
 	}
 
