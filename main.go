@@ -95,7 +95,7 @@ func main() {
 	// curved label
 	curve := `
 <path
-	d="M%f %f A%f %f 0 0 0 %f %f L%f %f A%f %f 0 0 0 %f %f Z"
+	d="M%f %f A%f %f 0 0 1 %f %f L%f %f A%f %f 0 0 0 %f %f Z"
 	transform="%s"
 	fill="none" stroke="black" stroke-width="0.1"
 />`
@@ -137,6 +137,6 @@ func main() {
 	if !c {
 		fmt.Println(svg)
 	} else {
-		fmt.Printf("t:%f b:%f h:%f p:%f p1x:%f p1y:%f a:%f q:%f q1x:%f q1y:%f q2x:%f q2y:%f o1x:%f o1y:%f\n", t, b, h, p, p1x, p1y, a*180/math.Pi, q, q1x, q1y, q2x, q2y, o1x, o1y)
+		fmt.Printf("t:%f b:%f h:%f p:%f a:%f q:%f q2x:%f q2y:%f o1x:%f o1y:%f\n", t, b, h, p, a*180/math.Pi, q, q2x, q2y, o1x, o1y)
 	}
 }
