@@ -70,9 +70,6 @@ func main() {
 	// end point
 	px := 0.0
 	py := p
-	// bezier control point
-	p1x := math.Tan(a2) * p
-	p1y := p
 	// start point
 	p2x := math.Sin(a) * p
 	p2y := math.Cos(a) * p
@@ -80,9 +77,6 @@ func main() {
 	// start
 	qx := 0.0
 	qy := q
-	// control
-	q1x := math.Tan(a2) * q
-	q1y := q
 	// end
 	q2x := math.Sin(a) * q
 	q2y := math.Cos(a) * q
@@ -101,11 +95,11 @@ func main() {
 	// curved label
 	curve := `
 <path
-	d="M%f %f Q%f %f %f %f L%f %f Q%f %f %f %f Z"
+	d="M%f %f A%f %f 0 0 0 %f %f L%f %f A%f %f 0 0 0 %f %f Z"
 	transform="%s"
 	fill="none" stroke="black" stroke-width="0.1"
 />`
-	curve = fmt.Sprintf(curve, p2x, p2y, p1x, p1y, px, py, qx, qy, q1x, q1y, q2x, q2y, transform)
+	curve = fmt.Sprintf(curve, p2x, p2y, p, p, px, py, qx, qy, q, q, q2x, q2y, transform)
 
 	// straightened label
 	rect := ""
