@@ -14,11 +14,11 @@ var (
 )
 
 func param() {
-	flag.Float64Var(&t, "T", 0, "Top diameter of the cone")
-	flag.Float64Var(&b, "B", 0, "Bottom diameter of the cone")
-	flag.Float64Var(&h, "H", 0, "Height of the label")
-	flag.Float64Var(&w, "W", 0, "Width of the straightened label")
-	flag.Float64Var(&g, "G", 0, "Gap between ends of label")
+	flag.Float64Var(&t, "T", 0.0, "Top diameter of the cone")
+	flag.Float64Var(&b, "B", 0.0, "Bottom diameter of the cone")
+	flag.Float64Var(&h, "H", 0.0, "Height of the label")
+	flag.Float64Var(&w, "W", 0.0, "Width of the straightened label")
+	flag.Float64Var(&g, "G", 0.0, "Gap between ends of label")
 	flag.BoolVar(&c, "C", false, "Print only numbers")
 	flag.BoolVar(&d, "D", false, "Print straighten unfolded cone")
 	flag.Parse()
@@ -40,9 +40,6 @@ func main() {
 	// half of cone angle (in radians)
 	a2 := math.Asin(0.5 * (b - t) / h)
 	a = 2 * a2
-	// top circle unwrapped
-	l = math.Pi * t
-	// (p+h2)/(b/2) = p/(t/2)
 	// segment on top of top-circle to complete the entire cone
 	p := 0.5 * t / math.Sin(a2)
 	// entire cone radius
@@ -62,11 +59,13 @@ func main() {
 
 	// unfolded cone no more than sem-circle - 3 radians
 	if a >= 3 || (b-t)*0.5 >= h {
-		log.Fatalf("imposible label having height %.2f for cone with diameters %.2f %.2f/n", h, b, t)
+		log.Fatalf("imposible label having height %.2f for cone with diameters %.2f %.2f\n", h, b, t)
 	}
 
 	// height of encompassing rect for curved label
 	hx := q - math.Cos(a2)*p
+	// width of encompassing rect for curved label
+	wx := q * a
 
 	// end point
 	px := 0.0
@@ -90,11 +89,10 @@ func main() {
 
 	// reposition for a nice, natural view of label
 	transform := "translate(%f,%f) "
-	rectw := q * a
-	transform = fmt.Sprintf(transform, 0.5*rectw, -1.0*(q-hx))
+	transform = fmt.Sprintf(transform, 0.5*wx, -1.0*(q-hx))
 	if flip {
 		transform = "translate(%f,%f) scale(1,-1) "
-		transform = fmt.Sprintf(transform, 0.5*rectw, q)
+		transform = fmt.Sprintf(transform, 0.5*wx, q)
 	}
 	transform += "rotate(%f)"
 	degrees := a2 * 180 / math.Pi
@@ -118,7 +116,7 @@ func main() {
 	width="%f" height="%f"
 	fill="none" stroke="black" stroke-width="0.1"
 />`
-		rect = fmt.Sprintf(rect, 0.0, 0.0, rectw, h)
+		rect = fmt.Sprintf(rect, 0.0, 0.0, wx, h)
 	}
 
 	// final composition
@@ -132,7 +130,7 @@ func main() {
 	%s%s
 </svg>`
 	ox, oy := 0.0, 0.0
-	o1x, o1y := rectw, hx
+	o1x, o1y := wx, hx
 	unit := "mm"
 	svg = fmt.Sprintf(
 		svg,
