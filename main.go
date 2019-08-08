@@ -47,6 +47,9 @@ func main() {
 
 	// adjust angle regarding requested label width
 	if w > 0.0 {
+		if w > a*q {
+			log.Printf("beyond width %.2f label overlaps", a*q)
+		}
 		a = w / q
 		a2 = 0.5 * a
 	}
