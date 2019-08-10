@@ -45,11 +45,10 @@ func main() {
 	// entire cone radius
 	q := p + h
 
+	wcone := a * q
+
 	// adjust angle regarding requested label width
 	if w > 0.0 {
-		if w > a*q {
-			log.Printf("beyond width %.2f label overlaps", a*q)
-		}
 		a = w / q
 		a2 = 0.5 * a
 	}
@@ -58,6 +57,16 @@ func main() {
 		ag := g / q
 		a += ag
 		a2 = 0.5 * a
+	}
+
+	if w > 0.0 {
+		w += g
+	} else {
+		w = wcone + g
+	}
+
+	if w > wcone {
+		log.Printf("beyond width %.2f label overlaps", a*q)
 	}
 
 	// unfolded cone no more than sem-circle - 3 radians
